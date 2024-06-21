@@ -4,6 +4,7 @@ import com.company.order_service.dto.OrderDto;
 import com.company.order_service.dto.converter.OrderDtoConverter;
 import com.company.order_service.dto.request.OrderRequest;
 import com.company.order_service.exception.OrderNotFoundException;
+import com.company.order_service.kafka.KafkaProducer;
 import com.company.order_service.model.Order;
 import com.company.order_service.model.OrderStatus;
 import com.company.order_service.repository.OrderRepository;
@@ -16,10 +17,12 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final OrderDtoConverter orderDtoConverter;
+    private final KafkaProducer kafkaProducer;
 
-    public OrderService(OrderRepository orderRepository, OrderDtoConverter orderDtoConverter) {
+    public OrderService(OrderRepository orderRepository, OrderDtoConverter orderDtoConverter, KafkaProducer kafkaProducer) {
         this.orderRepository = orderRepository;
         this.orderDtoConverter = orderDtoConverter;
+        this.kafkaProducer = kafkaProducer;
     }
 
     public OrderDto createOrder(final OrderRequest orderRequest) {
@@ -30,7 +33,10 @@ public class OrderService {
                 orderRequest.totalAmount(),
                 orderRequest.deliveryAddress()
         );
-        return orderDtoConverter.convert(orderRepository.save(order));
+        Order savedOrder = orderRepository.save(order);
+        OrderDto orderDto = orderDtoConverter.convert(savedOrder);
+        kafkaProducer.sendMessage(orderDto.toString());
+        return orderDto;
     }
 
     public List<OrderDto> getAllOrders() {
@@ -41,17 +47,17 @@ public class OrderService {
         return orderDtoConverter.convert(findOrderById(id));
     }
 
-        public void confirmOrder(final String id) {
-            Order order = findOrderById(id);
-            order.updateOrderStatus(OrderStatus.CONFIRMED);
-            orderRepository.save(order);
-        }
+    public void confirmOrder(final String id) {
+        Order order = findOrderById(id);
+        order.updateOrderStatus(OrderStatus.CONFIRMED);
+        orderRepository.save(order);
+    }
 
-        public void cancelOrder(final String id) {
-            Order order = findOrderById(id);
-            order.updateOrderStatus(OrderStatus.CANCELLED);
-            orderRepository.save(order);
-        }
+    public void cancelOrder(final String id) {
+        Order order = findOrderById(id);
+        order.updateOrderStatus(OrderStatus.CANCELLED);
+        orderRepository.save(order);
+    }
 
     public void deleteOrder(final String id) {
         findOrderById(id);
