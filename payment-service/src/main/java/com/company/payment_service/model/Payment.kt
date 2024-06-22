@@ -4,7 +4,6 @@ import com.company.payment_service.model.enums.Currency
 import com.company.payment_service.model.enums.PaymentMethod
 import com.company.payment_service.model.enums.PaymentStatus
 import jakarta.persistence.*
-import java.math.BigDecimal
 import java.time.LocalDateTime
 
 @Entity
@@ -16,17 +15,19 @@ data class Payment @JvmOverloads constructor(
     val id: String? = "",
 
     val orderId: String,
-    val amount: BigDecimal,
     val paymentDate: LocalDateTime = LocalDateTime.now(),
 
     @Enumerated(EnumType.STRING)
     val paymentMethod: PaymentMethod,
 
     @Enumerated(EnumType.STRING)
-    val paymentStatus: PaymentStatus = PaymentStatus.PENDING,
+    var paymentStatus: PaymentStatus = PaymentStatus.PENDING,
 
     @Enumerated(EnumType.STRING)
     val currency: Currency
 
-
-)
+) {
+    fun updatePaymentStatus(newStatus: PaymentStatus) {
+        paymentStatus = newStatus
+    }
+}
