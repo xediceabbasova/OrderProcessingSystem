@@ -43,17 +43,36 @@ public class PaymentService {
             throw new OrderNotFoundException("Order ID not found in cache: " + orderId);
         }
 
-        Payment payment = new Payment(
+        Payment payment = createPayment(orderId, paymentRequest);
+
+        try {
+            logger.info("Payment processing simulated successfully.");
+
+            payment.updatePaymentStatus(PaymentStatus.COMPLETED);
+            updateOrderStatus(orderDto, OrderStatusDto.CONFIRMED);
+
+            logger.info("Payment processing completed successfully for Order ID: {}", orderId);
+        } catch (Exception e) {
+            logger.error("Payment processing failed for Order ID: {}", orderId, e);
+
+            payment.updatePaymentStatus(PaymentStatus.FAILED);
+            updateOrderStatus(orderDto, OrderStatusDto.CANCELLED);
+
+            logger.info("Order has been cancelled for Order ID: {}", orderId);
+        }
+        paymentRepository.save(payment);
+        return paymentDtoConverter.convert(payment);
+    }
+
+    private Payment createPayment(String orderId, PaymentRequest paymentRequest) {
+        return new Payment(
                 orderId,
                 PaymentMethod.valueOf(paymentRequest.paymentMethodDto().name()),
                 Currency.valueOf(paymentRequest.currencyDto().name())
         );
+    }
 
-        logger.info("Payment processing simulated successfully.");
-
-        payment.updatePaymentStatus(PaymentStatus.COMPLETED);
-        paymentRepository.save(payment);
-
+    private void updateOrderStatus(OrderDto orderDto, OrderStatusDto orderStatusDto) {
         OrderDto updatedOrderDto = new OrderDto(
                 orderDto.id(),
                 orderDto.userEmail(),
@@ -62,16 +81,8 @@ public class PaymentService {
                 orderDto.totalAmount(),
                 orderDto.orderDate(),
                 orderDto.deliveryAddress(),
-                OrderStatusDto.CONFIRMED
+                orderStatusDto
         );
-        orderCache.put(orderId, updatedOrderDto);
-
-        logger.info("Payment processing completed successfully for Order ID: {}", orderId);
-
-        return paymentDtoConverter.convert(payment);
+        orderCache.put(orderDto.id(), updatedOrderDto);
     }
 }
-
-
-
-

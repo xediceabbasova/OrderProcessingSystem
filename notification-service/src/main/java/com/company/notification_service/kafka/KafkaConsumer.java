@@ -1,7 +1,7 @@
-package com.company.payment_service.kafka;
+package com.company.notification_service.kafka;
 
-import com.company.payment_service.dto.OrderDto;
-import com.company.payment_service.service.PaymentService;
+import com.company.notification_service.dto.OrderDto;
+import com.company.notification_service.service.NotificationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -14,20 +14,19 @@ public class KafkaConsumer {
 
     private static final Logger logger = LoggerFactory.getLogger(KafkaConsumer.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final PaymentService paymentService;
+    private final NotificationService notificationService;
 
-    public KafkaConsumer(PaymentService paymentService) {
-        this.paymentService = paymentService;
+    public KafkaConsumer(NotificationService notificationService) {
+        this.notificationService = notificationService;
     }
 
-
-    @KafkaListener(topics = "order-topic", groupId = "payment-group")
+    @KafkaListener(topics = "payment-topic", groupId = "notification-group")
     public void consume(String message) {
         logger.info("Kafkadan gelen mesaj : {}", message);
 
         OrderDto orderDto = convertMessageToOrderDto(message);
         if (orderDto != null) {
-            paymentService.cacheOrder(orderDto);
+            notificationService.sendMessage(orderDto);
         }
     }
 
