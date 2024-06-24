@@ -6,6 +6,7 @@ import com.company.payment_service.dto.converter.PaymentDtoConverter;
 import com.company.payment_service.dto.enums.OrderStatusDto;
 import com.company.payment_service.dto.request.PaymentRequest;
 import com.company.payment_service.exception.OrderNotFoundException;
+import com.company.payment_service.kafka.KafkaProducer;
 import com.company.payment_service.model.Payment;
 import com.company.payment_service.model.enums.Currency;
 import com.company.payment_service.model.enums.PaymentMethod;
@@ -25,10 +26,12 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final PaymentDtoConverter paymentDtoConverter;
     private final ConcurrentHashMap<String, OrderDto> orderCache = new ConcurrentHashMap<>();
+    private final KafkaProducer kafkaProducer;
 
-    public PaymentService(PaymentRepository paymentRepository, PaymentDtoConverter paymentDtoConverter) {
+    public PaymentService(PaymentRepository paymentRepository, PaymentDtoConverter paymentDtoConverter, KafkaProducer kafkaProducer) {
         this.paymentRepository = paymentRepository;
         this.paymentDtoConverter = paymentDtoConverter;
+        this.kafkaProducer = kafkaProducer;
     }
 
     public void cacheOrder(OrderDto orderDto) {
@@ -61,6 +64,8 @@ public class PaymentService {
             logger.info("Order has been cancelled for Order ID: {}", orderId);
         }
         paymentRepository.save(payment);
+        kafkaProducer.sendMessage(orderDto.toString());
+
         return paymentDtoConverter.convert(payment);
     }
 

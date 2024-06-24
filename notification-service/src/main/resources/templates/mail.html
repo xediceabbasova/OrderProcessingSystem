@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Status Update</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background-color: #007bff;
+            padding: 20px;
+            text-align: center;
+            color: #ffffff;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .content p {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .content strong {
+            color: #007bff;
+        }
+
+        .footer {
+            background-color: #f1f1f1;
+            padding: 10px;
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+        }
+
+        .order-details {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fafafa;
+        }
+
+        .order-details p {
+            margin: 0;
+            padding: 5px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Order Status Update</h1>
+    </div>
+    <div class="content">
+        <p>Dear Customer,</p>
+        <p>Your order with ID: <strong>{orderId}</strong> has been <strong>{orderStatus}</strong>.</p>
+        <div class="order-details">
+            <p><strong>Order ID:</strong> {orderId}</p>
+            <p><strong>Status:</strong> {orderStatus}</p>
+            <p><strong>Total Amount:</strong> {totalAmount}</p>
+            <p><strong>Order Date:</strong> {orderDate}</p>
+        </div>
+        <p>Thank you for shopping with us!</p>
+    </div>
+    <div class="footer">
+        <p>&copy; 2024 Your Company Name. All rights reserved.</p>
+    </div>
+</div>
+</body>
+</html>
