@@ -8,6 +8,11 @@ import com.company.order_service.kafka.KafkaProducer;
 import com.company.order_service.model.Order;
 import com.company.order_service.model.OrderStatus;
 import com.company.order_service.repository.OrderRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,6 +23,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderDtoConverter orderDtoConverter;
     private final KafkaProducer kafkaProducer;
+    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     public OrderService(OrderRepository orderRepository, OrderDtoConverter orderDtoConverter, KafkaProducer kafkaProducer) {
         this.orderRepository = orderRepository;
@@ -35,7 +41,15 @@ public class OrderService {
         );
         Order savedOrder = orderRepository.save(order);
         OrderDto orderDto = orderDtoConverter.convert(savedOrder);
-        kafkaProducer.sendMessage(orderDto.toString());
+
+        String message;
+        try {
+            message = objectMapper.writeValueAsString(orderDto);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error converting OrderDto to JSON", e);
+        }
+        kafkaProducer.sendMessage(message);
+
         return orderDto;
     }
 

@@ -3,6 +3,8 @@ package com.company.order_service.controller;
 import com.company.order_service.dto.OrderDto;
 import com.company.order_service.dto.request.OrderRequest;
 import com.company.order_service.service.OrderService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -34,13 +36,13 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getOrderById(id));
     }
 
-    @PatchMapping("/{id}/confirm")
+    @PutMapping("/{id}/confirm")
     public ResponseEntity<Void> confirmOrder(@PathVariable String id) {
         orderService.confirmOrder(id);
         return ResponseEntity.ok().build();
     }
 
-    @PatchMapping("/{id}/cancel")
+    @PutMapping("/{id}/cancel")
     public ResponseEntity<Void> cancelOrder(@PathVariable String id) {
         orderService.cancelOrder(id);
         return ResponseEntity.ok().build();

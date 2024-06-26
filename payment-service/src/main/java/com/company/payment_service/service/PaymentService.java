@@ -1,5 +1,6 @@
 package com.company.payment_service.service;
 
+import com.company.payment_service.client.OrderServiceClient;
 import com.company.payment_service.dto.OrderDto;
 import com.company.payment_service.dto.PaymentDto;
 import com.company.payment_service.dto.converter.PaymentDtoConverter;
@@ -12,6 +13,9 @@ import com.company.payment_service.model.enums.Currency;
 import com.company.payment_service.model.enums.PaymentMethod;
 import com.company.payment_service.model.enums.PaymentStatus;
 import com.company.payment_service.repository.PaymentRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -25,13 +29,17 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final PaymentDtoConverter paymentDtoConverter;
-    private final ConcurrentHashMap<String, OrderDto> orderCache = new ConcurrentHashMap<>();
     private final KafkaProducer kafkaProducer;
+    private final OrderServiceClient orderServiceClient;
 
-    public PaymentService(PaymentRepository paymentRepository, PaymentDtoConverter paymentDtoConverter, KafkaProducer kafkaProducer) {
+    private final ConcurrentHashMap<String, OrderDto> orderCache = new ConcurrentHashMap<>();
+    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+
+    public PaymentService(PaymentRepository paymentRepository, PaymentDtoConverter paymentDtoConverter, KafkaProducer kafkaProducer, OrderServiceClient orderServiceClient) {
         this.paymentRepository = paymentRepository;
         this.paymentDtoConverter = paymentDtoConverter;
         this.kafkaProducer = kafkaProducer;
+        this.orderServiceClient = orderServiceClient;
     }
 
     public void cacheOrder(OrderDto orderDto) {
@@ -52,19 +60,29 @@ public class PaymentService {
             logger.info("Payment processing simulated successfully.");
 
             payment.updatePaymentStatus(PaymentStatus.COMPLETED);
-            updateOrderStatus(orderDto, OrderStatusDto.CONFIRMED);
+            orderServiceClient.confirmOrder(orderId);
+            orderDto = orderDto.updateOrderStatus(OrderStatusDto.CONFIRMED);
 
             logger.info("Payment processing completed successfully for Order ID: {}", orderId);
         } catch (Exception e) {
             logger.error("Payment processing failed for Order ID: {}", orderId, e);
 
             payment.updatePaymentStatus(PaymentStatus.FAILED);
-            updateOrderStatus(orderDto, OrderStatusDto.CANCELLED);
+            orderServiceClient.cancelOrder(orderId);
+            orderDto = orderDto.updateOrderStatus(OrderStatusDto.CANCELLED);
 
             logger.info("Order has been cancelled for Order ID: {}", orderId);
         }
         paymentRepository.save(payment);
-        kafkaProducer.sendMessage(orderDto.toString());
+
+        String message;
+        try {
+            message = objectMapper.writeValueAsString(orderDto);
+        } catch (
+                JsonProcessingException e) {
+            throw new RuntimeException("Error converting OrderDto to JSON", e);
+        }
+        kafkaProducer.sendMessage(message);
 
         return paymentDtoConverter.convert(payment);
     }
@@ -77,17 +95,4 @@ public class PaymentService {
         );
     }
 
-    private void updateOrderStatus(OrderDto orderDto, OrderStatusDto orderStatusDto) {
-        OrderDto updatedOrderDto = new OrderDto(
-                orderDto.id(),
-                orderDto.userEmail(),
-                orderDto.productId(),
-                orderDto.quantity(),
-                orderDto.totalAmount(),
-                orderDto.orderDate(),
-                orderDto.deliveryAddress(),
-                orderStatusDto
-        );
-        orderCache.put(orderDto.id(), updatedOrderDto);
-    }
 }

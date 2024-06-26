@@ -15,4 +15,17 @@ public record OrderDto(
         String deliveryAddress,
         OrderStatusDto orderStatus
 ) {
+
+    public OrderDto updateOrderStatus(OrderStatusDto newStatus) {
+        return new OrderDto(
+                id(),
+                userEmail(),
+                productId(),
+                quantity(),
+                totalAmount(),
+                orderDate(),
+                deliveryAddress(),
+                newStatus
+        );
+    }
 }

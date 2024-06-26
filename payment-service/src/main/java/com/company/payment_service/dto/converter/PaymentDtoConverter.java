@@ -15,7 +15,7 @@ public class PaymentDtoConverter {
                 from.getId(),
                 from.getOrderId(),
                 from.getPaymentDate(),
-                PaymentMethodDto.valueOf(from.getPaymentMethod().getName()),
+                PaymentMethodDto.valueOf(from.getPaymentMethod().name()),
                 PaymentStatusDto.valueOf(from.getPaymentStatus().name()),
                 CurrencyDto.valueOf(from.getCurrency().name())
         );
